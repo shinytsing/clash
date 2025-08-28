@@ -1,0 +1,37 @@
+#!/bin/bash
+# 模拟的 Clash 二进制文件用于开发测试
+# 在实际部署时需要替换为真实的 Clash 核心
+
+case "$1" in
+    "-v"|"--version")
+        echo "Clash v1.18.0 (Development Mock)"
+        echo "Build time: $(date)"
+        echo "Mock binary for ClashX development"
+        ;;
+    "-h"|"--help")
+        echo "Usage: clash [options]"
+        echo "Options:"
+        echo "  -v, --version    Show version"
+        echo "  -h, --help       Show help"
+        echo "  -d <dir>         Set working directory"
+        echo "  -f <file>        Set configuration file"
+        echo "  -ext-ctl <addr>  Set external controller address"
+        ;;
+    *)
+        echo "Mock Clash starting..."
+        echo "Config directory: ${2:-./}"
+        echo "External controller: ${6:-127.0.0.1:9090}"
+        echo "HTTP proxy: 127.0.0.1:7890"
+        echo "SOCKS proxy: 127.0.0.1:7891"
+        echo ""
+        echo "⚠️  This is a mock binary for development."
+        echo "    Replace with real Clash binary for production use."
+        echo ""
+        echo "Press Ctrl+C to stop..."
+        
+        # 模拟长时间运行
+        while true; do
+            sleep 1
+        done
+        ;;
+esac
