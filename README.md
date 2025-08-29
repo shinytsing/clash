@@ -1,223 +1,135 @@
-# ClashX for macOS
+# ClashX - macOS 代理客户端
 
-一款专为 macOS 设计的现代化 Clash 客户端，提供直观的图形界面和强大的代理管理功能。
+一个功能完整的 macOS 代理客户端，基于 SwiftUI 构建，支持多种代理协议。
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Platform](https://img.shields.io/badge/platform-macOS%2011.0+-orange.svg)
-![Swift](https://img.shields.io/badge/Swift-5.0+-red.svg)
+## 🎉 项目状态
 
-## ✨ 特性
+✅ **已完全修复并可运行** - 从损坏的项目文件修复到完整可用的应用程序
 
-### 🚀 核心功能
-- **一键启停代理** - 快速启用/停用系统代理
-- **智能模式切换** - 支持全局、规则、直连三种模式
-- **订阅管理** - 支持订阅链接自动更新配置
-- **节点管理** - 可视化节点列表，支持延迟测试
-- **流量监控** - 实时显示上传下载速度和流量统计
+## ✨ 功能特性
 
-### 🎨 用户体验
-- **原生 macOS 设计** - 遵循苹果设计规范，支持深色模式
-- **菜单栏集成** - 便捷的菜单栏控制，一键访问常用功能
-- **现代化界面** - 使用 SwiftUI 构建的现代化用户界面
-- **系统集成** - 自动管理系统代理设置，无需手动配置
+- 🖥️ **现代化 SwiftUI 界面** - 原生 macOS 体验
+- 🌐 **多协议支持** - Trojan、Shadowsocks、VMess 等
+- ⚙️ **配置管理** - 支持本地配置和订阅更新
+- 📊 **流量监控** - 实时网络流量统计
+- 🔧 **系统代理** - 自动配置 macOS 系统代理设置
+- 🎯 **规则引擎** - 智能分流和广告拦截
+- 📱 **菜单栏集成** - 便捷的状态栏控制
 
-### ⚡ 高级功能
-- **自动延迟测试** - 定期测试节点延迟，自动选择最优节点
-- **配置热切换** - 无需重启即可切换配置文件
-- **智能分流** - 基于规则的智能流量分发
-- **开机自启** - 支持开机自动启动
+## 🛠️ 修复内容
 
-## 📋 系统要求
+### 核心修复
+- ✅ 修复损坏的 Xcode 项目文件 (`project.pbxproj`)
+- ✅ 解决 SwiftUI macOS 版本兼容性问题
+- ✅ 修复 `NavigationSplitView`、`@ToolbarContentBuilder` 等新 API 兼容性
+- ✅ 解决 `SystemConfiguration` 框架使用问题
+- ✅ 修复并发和主线程调用问题
 
-- macOS 11.0 (Big Sur) 或更高版本
-- 支持 Intel 和 Apple Silicon (M1/M2) 芯片
+### 功能完善
+- ✅ 完整的配置管理系统
+- ✅ 真实代理配置集成
+- ✅ 网络权限配置优化
+- ✅ 完整的 UI 界面实现
 
-## 🚀 快速开始
+## 📁 项目结构
 
-### 方法一：使用 Xcode 构建
-
-1. **克隆项目**
-   ```bash
-   git clone https://github.com/your-username/clashx-macos.git
-   cd clashx-macos
-   ```
-
-2. **安装依赖**
-   - 确保安装了 Xcode 14.0 或更高版本
-   - 打开 `ClashX.xcodeproj`
-
-3. **添加 Clash 核心**
-   - 下载 Clash 核心二进制文件 (clash-darwin)
-   - 将其重命名为 `clash-darwin` 并放置在项目的 Resources 目录中
-
-4. **构建运行**
-   - 在 Xcode 中选择目标设备并运行项目
-   - 或使用命令行：`xcodebuild -project ClashX.xcodeproj -scheme ClashX build`
-
-### 方法二：使用预编译版本
-
-1. 从 [Releases](https://github.com/your-username/clashx-macos/releases) 页面下载最新版本
-2. 解压并拖拽到应用程序文件夹
-3. 首次运行时，可能需要在系统偏好设置中允许运行
-
-## 📖 使用指南
-
-### 首次配置
-
-1. **启动应用**
-   - 启动后会在菜单栏显示网络图标
-   - 点击图标打开快捷菜单
-
-2. **添加配置**
-   - 点击"配置管理"打开主窗口
-   - 点击"添加配置"按钮
-   - 输入订阅链接或导入本地配置文件
-
-3. **启动代理**
-   - 在菜单栏或主窗口中点击"启动代理"
-   - 选择合适的代理模式
-   - 系统代理将自动配置
-
-### 配置文件格式
-
-支持标准的 Clash 配置格式（YAML），示例配置：
-
-```yaml
-port: 7890
-socks-port: 7891
-allow-lan: false
-mode: rule
-log-level: info
-external-controller: 127.0.0.1:9090
-
-dns:
-  enable: true
-  nameserver:
-    - 223.5.5.5
-    - 114.114.114.114
-
-proxies:
-  - name: "节点1"
-    type: trojan
-    server: example.com
-    port: 443
-    password: password
-
-proxy-groups:
-  - name: "PROXY"
-    type: select
-    proxies: ["节点1"]
-
-rules:
-  - MATCH,PROXY
+```
+ClashX/
+├── ClashXApp.swift          # 应用程序入口
+├── Core/                    # 核心功能模块
+│   ├── ClashCore.swift      # Clash 核心管理
+│   ├── SystemProxyHelper.swift # 系统代理设置
+│   └── YAMLParser.swift     # 配置解析
+├── Managers/                # 管理器类
+│   ├── ConfigManager.swift  # 配置管理
+│   ├── NetworkManager.swift # 网络管理
+│   ├── NodeManager.swift    # 节点管理
+│   └── ProxyManager.swift   # 代理管理
+├── Models/                  # 数据模型
+│   └── ProxyModels.swift    # 代理相关模型
+├── UI/                      # 用户界面
+│   ├── ContentView.swift    # 主界面
+│   └── MenuBarController.swift # 菜单栏控制
+└── Resources/               # 资源文件
+    ├── clash-darwin         # Clash 核心二进制
+    └── default-config.yaml  # 默认配置
 ```
 
-### 订阅链接
+## 🚀 构建和运行
 
-应用支持以下格式的订阅链接：
-- 标准 Clash 订阅链接
-- YAML 格式配置文件链接
+### 环境要求
+- macOS 12.0+
+- Xcode 14.0+
+- Swift 5.7+
 
-## ⚙️ 配置选项
+### 构建步骤
+
+1. **克隆仓库**
+   ```bash
+   git clone git@github.com:shinytsing/clash.git
+   cd clash
+   ```
+
+2. **打开项目**
+   ```bash
+   open ClashX.xcodeproj
+   ```
+
+3. **编译运行**
+   - 在 Xcode 中选择目标设备
+   - 按 `Cmd+R` 编译运行
+
+### 配置设置
+
+1. 启动应用程序
+2. 在配置页面导入你的代理配置
+3. 或者将配置文件放在 `~/Library/Application Support/ClashX/configs/`
+4. 点击"启动代理"开始使用
+
+## 📖 使用说明
+
+### 界面导航
+- **仪表盘** - 查看连接状态和流量统计
+- **代理** - 管理代理节点和测试延迟
+- **配置** - 管理配置文件和订阅
+- **日志** - 查看运行日志
+- **设置** - 应用程序设置
 
 ### 代理模式
-- **全局模式** - 所有流量都通过代理
-- **规则模式** - 根据规则智能分流（推荐）
-- **直连模式** - 所有流量直连，不使用代理
-
-### 自动化设置
-- **开机自启动** - 系统启动时自动运行
-- **自动更新订阅** - 定期更新订阅配置
-- **自动选择节点** - 基于延迟自动选择最优节点
+- **规则模式** - 根据规则自动分流
+- **全局模式** - 所有流量通过代理
+- **直连模式** - 不使用代理
 
 ## 🔧 故障排除
 
 ### 常见问题
 
-**Q: 应用无法启动代理**
-A: 检查以下项目：
-- 确保配置文件格式正确
-- 检查网络连接
-- 查看应用日志获取详细错误信息
+1. **编译失败**
+   - 确保 Xcode 版本符合要求
+   - 清理构建缓存 (`Cmd+Shift+K`)
 
-**Q: 无法访问某些网站**
-A: 尝试以下解决方案：
-- 切换到全局模式
-- 更新订阅配置
-- 手动选择其他节点
+2. **代理无法启动**
+   - 检查配置文件格式是否正确
+   - 确保代理服务器地址可访问
 
-**Q: 系统代理设置失效**
-A: 
-- 检查应用是否有系统偏好设置权限
-- 手动重置网络代理设置
-- 重启应用
+3. **权限问题**
+   - 应用程序已配置必要的网络权限
+   - 首次运行可能需要授权
 
-### 日志查看
+## 🤝 贡献
 
-在主窗口的"日志"选项卡中可以查看详细的运行日志，有助于诊断问题。
-
-## 🛠️ 开发
-
-### 项目结构
-
-```
-ClashX/
-├── ClashXApp.swift           # 应用入口
-├── Core/
-│   └── ClashCore.swift       # Clash 核心管理
-├── Managers/
-│   ├── ConfigManager.swift   # 配置管理
-│   ├── ProxyManager.swift    # 代理管理
-│   ├── NodeManager.swift     # 节点管理
-│   └── NetworkManager.swift  # 网络管理
-├── Models/
-│   └── ProxyModels.swift     # 数据模型
-├── UI/
-│   ├── ContentView.swift     # 主界面
-│   └── MenuBarController.swift # 菜单栏控制
-└── Resources/
-    └── clash-darwin          # Clash 核心二进制
-```
-
-### 技术栈
-
-- **语言**: Swift 5.0+
-- **框架**: SwiftUI + AppKit
-- **架构**: MVVM
-- **网络**: URLSession + Combine
-- **存储**: UserDefaults + FileManager
-
-### 贡献指南
-
-1. Fork 项目
-2. 创建特性分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add some amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 开启 Pull Request
+欢迎提交 Issue 和 Pull Request！
 
 ## 📄 许可证
 
-本项目基于 MIT 许可证开源 - 查看 [LICENSE](LICENSE) 文件了解详情。
+本项目基于 MIT 许可证开源。
 
-## 🙏 致谢
+## 📞 支持
 
-- [Clash](https://github.com/Dreamacro/clash) - 强大的代理核心
-- [ClashX](https://github.com/yichengchen/clashX) - 原始 ClashX 项目的灵感来源
-- Apple - 提供优秀的开发工具和框架
-
-## 🔗 相关链接
-
-- [Clash 文档](https://clash.gitbook.io/doc/)
-- [Clash 规则集](https://github.com/Loyalsoldier/clash-rules)
-- [macOS 开发指南](https://developer.apple.com/macos/)
-
-## 📧 支持
-
-如果你有任何问题或建议，欢迎：
-- 提交 [Issue](https://github.com/your-username/clashx-macos/issues)
-- 发起 [Discussion](https://github.com/your-username/clashx-macos/discussions)
-- 发邮件至 your-email@example.com
+如有问题，请通过以下方式联系：
+- 提交 GitHub Issue
+- 发送邮件反馈
 
 ---
 
-⭐ 如果这个项目对你有帮助，请给它一个 Star！
+**注意**: 本项目仅供学习和研究使用，请遵守当地法律法规。
