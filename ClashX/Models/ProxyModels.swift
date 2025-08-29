@@ -169,26 +169,7 @@ struct TrafficInfo: Codable {
     let down: Int
 }
 
-// MARK: - 系统代理设置
-struct SystemProxySettings {
-    var httpEnabled: Bool = false
-    var httpsEnabled: Bool = false
-    var socksEnabled: Bool = false
-    var httpProxy: String = "127.0.0.1"
-    var httpPort: Int = 7890
-    var httpsProxy: String = "127.0.0.1"
-    var httpsPort: Int = 7890
-    var socksProxy: String = "127.0.0.1"
-    var socksPort: Int = 7891
-    var excludeSimpleHostnames: Bool = true
-    var exceptionsList: [String] = [
-        "127.0.0.1",
-        "localhost",
-        "*.local",
-        "timestamp.apple.com",
-        "*.cn"
-    ]
-}
+// SystemProxySettings 已在 SystemProxyHelper.swift 中定义
 
 // MARK: - 错误定义
 enum ClashError: LocalizedError {

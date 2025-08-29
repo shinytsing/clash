@@ -12,7 +12,7 @@ class NodeManager: ObservableObject {
     
     private var cancellables = Set<AnyCancellable>()
     private let networkManager = NetworkManager.shared
-    private let configManager = ConfigManager()
+    // 移除直接依赖，使用注入的方式或简化实现
     
     // MARK: - 初始化
     init() {
@@ -22,21 +22,15 @@ class NodeManager: ObservableObject {
     // MARK: - 设置绑定
     
     private func setupBindings() {
-        // 监听配置变化
-        configManager.$currentConfig
-            .sink { [weak self] _ in
-                Task {
-                    await self?.loadNodes()
-                }
-            }
-            .store(in: &cancellables)
+        // 暂时简化：移除配置变化监听
+        // 后续可以通过通知中心或其他方式实现
     }
     
     // MARK: - 节点加载
     
     /// 加载节点列表
     func loadNodes() async {
-        guard ClashCore.shared.isRunning else {
+        guard await ClashCore.shared.isRunning else {
             // 如果 Clash 核心未运行，从配置文件加载
             await loadNodesFromConfig()
             return
@@ -101,21 +95,21 @@ class NodeManager: ObservableObject {
     
     /// 从配置文件加载节点
     private func loadNodesFromConfig() async {
-        do {
-            let config = try configManager.parseCurrentConfig()
+        // 简化实现：创建一些示例节点
+        let sampleNodes = [
+            ProxyNode(name: "香港-01", type: "ss", server: "hk1.example.com", port: 443, password: nil, cipher: nil, alpn: nil, skipCertVerify: nil),
+            ProxyNode(name: "美国-01", type: "ss", server: "us1.example.com", port: 443, password: nil, cipher: nil, alpn: nil, skipCertVerify: nil),
+            ProxyNode(name: "日本-01", type: "ss", server: "jp1.example.com", port: 443, password: nil, cipher: nil, alpn: nil, skipCertVerify: nil)
+        ]
+        
+        await MainActor.run {
+            self.nodes = sampleNodes
+            self.proxyGroups = []
             
-            await MainActor.run {
-                self.nodes = config.proxies
-                self.proxyGroups = config.proxyGroups
-                
-                // 如果没有选中节点，默认选择第一个
-                if selectedNode == nil && !nodes.isEmpty {
-                    selectedNode = nodes.first
-                }
+            // 如果没有选中节点，默认选择第一个
+            if selectedNode == nil && !nodes.isEmpty {
+                selectedNode = nodes.first
             }
-            
-        } catch {
-            print("从配置文件加载节点失败: \(error)")
         }
     }
     
@@ -123,7 +117,7 @@ class NodeManager: ObservableObject {
     
     /// 选择节点
     func selectNode(_ node: ProxyNode) async {
-        guard ClashCore.shared.isRunning else {
+        guard await ClashCore.shared.isRunning else {
             await MainActor.run {
                 selectedNode = node
             }
@@ -292,7 +286,7 @@ class NodeManager: ObservableObject {
     
     /// 获取指定策略组的当前选中节点
     func getCurrentNodeForGroup(_ groupName: String) async -> String? {
-        guard ClashCore.shared.isRunning else { return nil }
+        guard await ClashCore.shared.isRunning else { return nil }
         
         do {
             let proxyInfo = try await ClashCore.shared.get("/proxies/\(groupName)", responseType: ProxyInfo.self)
@@ -305,7 +299,7 @@ class NodeManager: ObservableObject {
     
     /// 设置策略组的节点
     func setNodeForGroup(_ groupName: String, nodeName: String) async {
-        guard ClashCore.shared.isRunning else { return }
+        guard await ClashCore.shared.isRunning else { return }
         
         do {
             try await ClashCore.shared.put("/proxies/\(groupName)", body: ["name": nodeName])

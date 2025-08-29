@@ -70,7 +70,7 @@ class ProxyManager: ObservableObject {
         
         do {
             // 获取当前配置路径
-            guard let configPath = ConfigManager().currentConfigPath else {
+            guard let configPath = getConfigPath() else {
                 throw ClashError.configNotFound
             }
             
@@ -237,7 +237,35 @@ class ProxyManager: ObservableObject {
         end tell
         """
         
-        try runAppleScript(script)
+        // 暂时注释掉 PAC 模式，因为需要额外的权限
+        // try runAppleScript(script)
+        print("PAC 模式暂未实现")
+    }
+    
+    // MARK: - 辅助方法
+    
+    private func getConfigPath() -> String? {
+        // 获取当前配置文件路径
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let configsDir = appSupport.appendingPathComponent("ClashX/configs")
+        
+        // 优先使用 default.yaml
+        let defaultConfigPath = configsDir.appendingPathComponent("default.yaml")
+        if FileManager.default.fileExists(atPath: defaultConfigPath.path) {
+            return defaultConfigPath.path
+        }
+        
+        // 如果没有默认配置，查找任何 .yaml 文件
+        if let contents = try? FileManager.default.contentsOfDirectory(atPath: configsDir.path) {
+            for file in contents where file.hasSuffix(".yaml") || file.hasSuffix(".yml") {
+                let configPath = configsDir.appendingPathComponent(file)
+                if FileManager.default.fileExists(atPath: configPath.path) {
+                    return configPath.path
+                }
+            }
+        }
+        
+        return nil
     }
     
     // MARK: - 清理

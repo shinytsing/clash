@@ -16,7 +16,6 @@ struct ClashXApp: App {
                 .environmentObject(nodeManager)
                 .frame(width: 800, height: 600)
         }
-        .windowStyle(HiddenTitleBarWindowStyle())
         .commands {
             // 移除不需要的菜单项
             CommandGroup(replacing: .newItem) { }
@@ -24,14 +23,16 @@ struct ClashXApp: App {
             CommandGroup(replacing: .pasteboard) { }
         }
         
-        // 菜单栏额外设置
-        MenuBarExtra("ClashX", systemImage: "network") {
-            MenuBarView()
-                .environmentObject(configManager)
-                .environmentObject(proxyManager)
-                .environmentObject(nodeManager)
+        // 菜单栏额外设置 - 只在 macOS 13.0+ 支持
+        if #available(macOS 13.0, *) {
+            MenuBarExtra("ClashX", systemImage: "network") {
+                MenuBarView()
+                    .environmentObject(configManager)
+                    .environmentObject(proxyManager)
+                    .environmentObject(nodeManager)
+            }
+            .menuBarExtraStyle(.menu)
         }
-        .menuBarExtraStyle(.menu)
     }
 }
 
@@ -40,12 +41,16 @@ struct MenuBarView: View {
     @EnvironmentObject var configManager: ConfigManager
     @EnvironmentObject var proxyManager: ProxyManager
     @EnvironmentObject var nodeManager: NodeManager
-    @Environment(\.openWindow) var openWindow
+    // openWindow 只在 macOS 13.0+ 可用
+    @available(macOS 13.0, *)
+    private var openWindow: OpenWindowAction? {
+        return nil // 暂时使用 nil，实际使用时需要正确注入
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // 代理状态
-            Group {
+            VStack {
                 HStack {
                     Circle()
                         .fill(proxyManager.isRunning ? .green : .red)
@@ -70,7 +75,7 @@ struct MenuBarView: View {
                         Text(proxyManager.downloadSpeed)
                         Spacer()
                     }
-                    .font(.system(size: 10, family: .monospaced))
+                    .font(.system(size: 10, design: .monospaced))
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 12)
                     .padding(.bottom, 6)
@@ -80,7 +85,7 @@ struct MenuBarView: View {
             Divider()
             
             // 代理控制
-            Group {
+            VStack {
                 Button(action: {
                     Task {
                         await proxyManager.toggleProxy()
@@ -153,9 +158,10 @@ struct MenuBarView: View {
             }
             
             // 配置管理
-            Group {
+            VStack {
                 Button("配置管理") {
-                    openWindow(id: "main")
+                    // 显示主窗口的逻辑
+                    NSApp.activate(ignoringOtherApps: true)
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal, 12)

@@ -70,8 +70,8 @@ class NetworkManager: ObservableObject {
                 let timeDiff = currentTime.timeIntervalSince(self.lastTrafficTime)
                 
                 if timeDiff > 0 {
-                    let uploadDiff = max(0, traffic.up - self.lastUpload)
-                    let downloadDiff = max(0, traffic.down - self.lastDownload)
+                    let uploadDiff = max(0, traffic.up - Int(self.lastUpload))
+                    let downloadDiff = max(0, traffic.down - Int(self.lastDownload))
                     
                     let uploadSpeedValue = Double(uploadDiff) / timeDiff
                     let downloadSpeedValue = Double(downloadDiff) / timeDiff
@@ -80,10 +80,10 @@ class NetworkManager: ObservableObject {
                     self.downloadSpeed = self.formatBytes(downloadSpeedValue) + "/s"
                 }
                 
-                self.lastUpload = traffic.up
-                self.lastDownload = traffic.down
-                self.totalUpload = traffic.up
-                self.totalDownload = traffic.down
+                self.lastUpload = Int64(traffic.up)
+                self.lastDownload = Int64(traffic.down)
+                self.totalUpload = Int64(traffic.up)
+                self.totalDownload = Int64(traffic.down)
                 self.lastTrafficTime = currentTime
             }
         } catch {
@@ -94,6 +94,7 @@ class NetworkManager: ObservableObject {
     // MARK: - 网络请求
     
     /// 下载文件
+    @available(macOS 12.0, *)
     func downloadFile(from url: URL, to destinationURL: URL, progress: @escaping (Double) -> Void) async throws {
         let (asyncBytes, response) = try await URLSession.shared.bytes(from: url)
         

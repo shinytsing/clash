@@ -1,0 +1,93 @@
+#!/bin/bash
+# 增强版模拟 Clash 核心
+# 提供基本的 HTTP 代理功能用于测试
+
+case "$1" in
+    "-v"|"--version")
+        echo "Clash Meta v1.18.0 (Enhanced Mock)"
+        echo "Build time: $(date)"
+        echo "Enhanced mock binary with basic proxy functionality"
+        ;;
+    "-t")
+        echo "配置文件语法检查..."
+        if [[ -f "$3" ]]; then
+            echo "✅ 配置文件 $3 语法正确"
+            exit 0
+        else
+            echo "❌ 配置文件 $3 不存在"
+            exit 1
+        fi
+        ;;
+    "-h"|"--help")
+        echo "Usage: clash [options]"
+        echo "Options:"
+        echo "  -v, --version    Show version"
+        echo "  -h, --help       Show help"
+        echo "  -t               Test configuration"
+        echo "  -d <dir>         Set working directory"
+        echo "  -f <file>        Set configuration file"
+        echo "  -ext-ctl <addr>  Set external controller address"
+        ;;
+    *)
+        echo "Enhanced Mock Clash starting..."
+        echo "Working directory: ${2:-./}"
+        echo "Configuration file: ${4:-config.yaml}"
+        echo "External controller: ${6:-127.0.0.1:9090}"
+        echo "HTTP proxy: 127.0.0.1:7890"
+        echo "SOCKS proxy: 127.0.0.1:7891"
+        echo ""
+        echo "🚀 Enhanced mock mode - provides basic functionality"
+        echo "⚠️  For full proxy functionality, replace with real Clash binary"
+        echo ""
+        echo "Starting enhanced mock proxy server..."
+        
+        # 创建简单的 HTTP 代理服务器
+        python3 -c "
+import socket
+import threading
+import time
+import signal
+import sys
+
+def handle_client(client_socket):
+    try:
+        request = client_socket.recv(4096).decode('utf-8')
+        if 'CONNECT' in request:
+            # HTTPS 隧道
+            client_socket.send(b'HTTP/1.1 200 Connection Established\r\n\r\n')
+        else:
+            # HTTP 请求
+            client_socket.send(b'HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n')
+        client_socket.close()
+    except:
+        pass
+
+def start_proxy():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        server.bind(('127.0.0.1', 7890))
+        server.listen(5)
+        print('Enhanced mock proxy listening on 127.0.0.1:7890')
+        while True:
+            client, addr = server.accept()
+            client_thread = threading.Thread(target=handle_client, args=(client,))
+            client_thread.daemon = True
+            client_thread.start()
+    except KeyboardInterrupt:
+        print('\nShutting down...')
+        server.close()
+    except Exception as e:
+        print(f'Error: {e}')
+
+if __name__ == '__main__':
+    start_proxy()
+" 2>/dev/null || echo "Python3 not available, basic mock mode only"
+        
+        # 保持运行
+        echo "Press Ctrl+C to stop..."
+        while true; do
+            sleep 1
+        done
+        ;;
+esac

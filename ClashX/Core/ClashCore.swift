@@ -1,7 +1,8 @@
 import Foundation
 import Network
+import AppKit
 
-/// Clash 核心管理类
+/// Clash 核心管理类  
 /// 负责与 Clash 二进制进程通信和生命周期管理
 class ClashCore: ObservableObject {
     // MARK: - 单例

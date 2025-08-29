@@ -1,6 +1,24 @@
 import Foundation
 import SystemConfiguration
 
+/// 系统代理设置结构体
+struct SystemProxySettings {
+    var httpEnabled: Bool = false
+    var httpProxy: String = ""
+    var httpPort: Int = 0
+    
+    var httpsEnabled: Bool = false
+    var httpsProxy: String = ""
+    var httpsPort: Int = 0
+    
+    var socksEnabled: Bool = false
+    var socksProxy: String = ""
+    var socksPort: Int = 0
+    
+    var exceptionsList: [String] = []
+    var excludeSimpleHostnames: Bool = false
+}
+
 /// 系统代理设置帮助工具
 /// 使用 SystemConfiguration 框架管理 macOS 系统代理设置
 class SystemProxyHelper {
@@ -85,16 +103,20 @@ class SystemProxyHelper {
         
         // 为每个网络服务设置代理
         for serviceID in networkServices {
-            try setProxyForService(
-                serviceID: serviceID,
-                httpProxy: httpProxy,
-                httpPort: httpPort,
-                httpsProxy: httpsProxy,
-                httpsPort: httpsPort,
-                socksProxy: socksProxy,
-                socksPort: socksPort,
-                enabled: enabled
-            )
+            do {
+                try setProxyForService(
+                    serviceID: serviceID,
+                    httpProxy: httpProxy,
+                    httpPort: httpPort,
+                    httpsProxy: httpsProxy,
+                    httpsPort: httpsPort,
+                    socksProxy: socksProxy,
+                    socksPort: socksPort,
+                    enabled: enabled
+                )
+            } catch {
+                throw error
+            }
         }
     }
     
@@ -174,12 +196,12 @@ class SystemProxyHelper {
         }
         
         // 获取协议配置
-        guard let protocol = SCNetworkServiceCopyProtocol(service, kSCNetworkProtocolTypeProxies) else {
+        guard let proxyProtocol = SCNetworkServiceCopyProtocol(service, kSCNetworkProtocolTypeProxies) else {
             throw ProxyError.configurationFailed("无法获取代理协议")
         }
         
         // 获取当前配置
-        guard let currentConfig = SCNetworkProtocolGetConfiguration(protocol) as? [String: Any] else {
+        guard let currentConfig = SCNetworkProtocolGetConfiguration(proxyProtocol) as? [String: Any] else {
             throw ProxyError.configurationFailed("无法获取当前配置")
         }
         
@@ -188,21 +210,21 @@ class SystemProxyHelper {
         if enabled {
             // 设置 HTTP 代理
             if let httpProxy = httpProxy, let httpPort = httpPort {
-                newConfig[kSCPropNetProxiesHTTPEnable as String] = true
+                newConfig[kSCPropNetProxiesHTTPEnable as String] = 1
                 newConfig[kSCPropNetProxiesHTTPProxy as String] = httpProxy
                 newConfig[kSCPropNetProxiesHTTPPort as String] = httpPort
             }
             
-            // 设置 HTTPS 代理
+            // 设置 HTTPS 代理  
             if let httpsProxy = httpsProxy, let httpsPort = httpsPort {
-                newConfig[kSCPropNetProxiesHTTPSEnable as String] = true
+                newConfig[kSCPropNetProxiesHTTPSEnable as String] = 1
                 newConfig[kSCPropNetProxiesHTTPSProxy as String] = httpsProxy
                 newConfig[kSCPropNetProxiesHTTPSPort as String] = httpsPort
             }
             
             // 设置 SOCKS 代理
             if let socksProxy = socksProxy, let socksPort = socksPort {
-                newConfig[kSCPropNetProxiesSOCKSEnable as String] = true
+                newConfig[kSCPropNetProxiesSOCKSEnable as String] = 1
                 newConfig[kSCPropNetProxiesSOCKSProxy as String] = socksProxy
                 newConfig[kSCPropNetProxiesSOCKSPort as String] = socksPort
             }
@@ -210,22 +232,22 @@ class SystemProxyHelper {
             // 设置例外列表
             newConfig[kSCPropNetProxiesExceptionsList as String] = [
                 "127.0.0.1",
-                "localhost",
+                "localhost", 
                 "*.local",
                 "timestamp.apple.com"
             ]
             
-            newConfig[kSCPropNetProxiesExcludeSimpleHostnames as String] = true
+            newConfig[kSCPropNetProxiesExcludeSimpleHostnames as String] = 1
             
         } else {
             // 禁用所有代理
-            newConfig[kSCPropNetProxiesHTTPEnable as String] = false
-            newConfig[kSCPropNetProxiesHTTPSEnable as String] = false
-            newConfig[kSCPropNetProxiesSOCKSEnable as String] = false
+            newConfig[kSCPropNetProxiesHTTPEnable as String] = 0
+            newConfig[kSCPropNetProxiesHTTPSEnable as String] = 0
+            newConfig[kSCPropNetProxiesSOCKSEnable as String] = 0
         }
         
         // 应用新配置
-        guard SCNetworkProtocolSetConfiguration(protocol, newConfig as CFDictionary) else {
+        guard SCNetworkProtocolSetConfiguration(proxyProtocol, newConfig as CFDictionary) else {
             throw ProxyError.configurationFailed("无法设置新配置")
         }
         

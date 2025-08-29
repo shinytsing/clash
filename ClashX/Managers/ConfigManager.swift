@@ -25,6 +25,7 @@ class ConfigManager: ObservableObject {
     init() {
         createConfigsDirectory()
         loadConfigs()
+        createDefaultConfigIfNeeded()
     }
     
     // MARK: - 目录管理
@@ -33,6 +34,65 @@ class ConfigManager: ObservableObject {
         if !fileManager.fileExists(atPath: configsDirectory.path) {
             try? fileManager.createDirectory(at: configsDirectory, withIntermediateDirectories: true)
         }
+    }
+    
+    /// 创建默认配置文件（如果不存在）
+    private func createDefaultConfigIfNeeded() {
+        let defaultConfigPath = configsDirectory.appendingPathComponent("default.yaml")
+        
+        // 如果默认配置文件不存在，创建一个
+        if !fileManager.fileExists(atPath: defaultConfigPath.path) {
+            let defaultConfigContent = createDefaultConfigContent()
+            try? defaultConfigContent.data(using: .utf8)?.write(to: defaultConfigPath)
+            
+            // 创建配置记录
+            let config = ClashConfig(
+                id: UUID(),
+                name: "默认配置",
+                subscriptionURL: nil,
+                isActive: true,
+                lastUpdate: Date()
+            )
+            
+            configs.append(config)
+            currentConfig = config
+            saveConfigs()
+        }
+        
+        // 如果没有当前配置，设置第一个为当前配置
+        if currentConfig == nil && !configs.isEmpty {
+            currentConfig = configs.first
+        }
+    }
+    
+    /// 创建默认配置文件内容
+    private func createDefaultConfigContent() -> String {
+        return """
+port: 7890
+socks-port: 7891
+allow-lan: false
+mode: rule
+log-level: info
+external-controller: 127.0.0.1:9090
+secret: ""
+
+dns:
+  enable: true
+  nameserver:
+    - 223.5.5.5
+    - 114.114.114.114
+
+proxies: []
+
+proxy-groups:
+  - name: "PROXY"
+    type: select
+    proxies:
+      - DIRECT
+
+rules:
+  - MATCH,DIRECT
+"""
     }
     
     // MARK: - 配置加载和保存
@@ -225,7 +285,7 @@ class ConfigManager: ObservableObject {
     /// 更新订阅配置
     func updateSubscription() async {
         guard let currentConfig = currentConfig,
-              let subscriptionURL = currentConfig.subscriptionURL else {
+              let _ = currentConfig.subscriptionURL else {
             print("当前配置不是订阅配置")
             return
         }

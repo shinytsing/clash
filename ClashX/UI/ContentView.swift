@@ -8,75 +8,96 @@ struct ContentView: View {
     @State private var searchText = ""
     
     var body: some View {
-        NavigationSplitView {
-            // 侧边栏
-            SidebarView(selectedTab: $selectedTab)
-                .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 250)
-        } detail: {
-            // 主内容区域
-            Group {
-                switch selectedTab {
-                case .dashboard:
-                    DashboardView()
-                case .proxies:
-                    ProxiesView(searchText: $searchText)
-                case .configs:
-                    ConfigsView()
-                case .logs:
-                    LogsView()
-                case .settings:
-                    SettingsView()
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigation) {
-                    HStack {
-                        Text(selectedTab.title)
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                        Spacer()
-                    }
-                }
-                
-                if selectedTab == .proxies {
-                    ToolbarItem(placement: .primaryAction) {
-                        HStack {
-                            TextField("搜索节点", text: $searchText)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .frame(width: 200)
-                            
-                            Button("测试延迟") {
-                                Task {
-                                    await nodeManager.testAllNodesDelay()
-                                }
-                            }
-                            .disabled(nodeManager.isTesting)
-                        }
-                    }
-                }
-                
-                if selectedTab == .configs {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button("更新订阅") {
-                            Task {
-                                await configManager.updateSubscription()
-                            }
-                        }
-                        .disabled(configManager.isUpdating)
-                    }
-                }
-            }
+        mainNavigationView
+    }
+    
+    private var mainNavigationView: some View {
+        NavigationView {
+            sidebarView
+            detailView
         }
         .environmentObject(configManager)
         .environmentObject(proxyManager)
         .environmentObject(nodeManager)
-        .onAppear {
-            // 初始化数据
-            Task {
-                await configManager.loadConfigs()
-                await nodeManager.loadNodes()
+        .onAppear(perform: initializeData)
+    }
+    
+    private var sidebarView: some View {
+        SidebarView(selectedTab: $selectedTab)
+            .frame(minWidth: 200, idealWidth: 220, maxWidth: 250)
+    }
+    
+    private var detailView: some View {
+        contentSwitcher
+            // 暂时移除 toolbar 以避免兼容性问题
+    }
+    
+    @ViewBuilder
+    private var contentSwitcher: some View {
+        switch selectedTab {
+        case .dashboard:
+            DashboardView()
+        case .proxies:
+            ProxiesView(searchText: $searchText)
+        case .configs:
+            ConfigsView()
+        case .logs:
+            LogsView()
+        case .settings:
+            SettingsView()
+        }
+    }
+    
+    private var toolbarContent: some View {
+        HStack {
+            navigationTitle
+            Spacer()
+            if selectedTab == .proxies {
+                proxiesToolbar
             }
+            if selectedTab == .configs {
+                configsToolbar
+            }
+        }
+    }
+    
+    private var navigationTitle: some View {
+        HStack {
+            Text(selectedTab.title)
+                .font(.title2)
+                .fontWeight(.semibold)
+            Spacer()
+        }
+    }
+    
+    private var proxiesToolbar: some View {
+        HStack {
+            TextField("搜索节点", text: $searchText)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .frame(width: 200)
+            
+            Button("测试延迟") {
+                Task {
+                    await nodeManager.testAllNodesDelay()
+                }
+            }
+            .disabled(nodeManager.isTesting)
+        }
+    }
+    
+    private var configsToolbar: some View {
+        Button("更新订阅") {
+            Task {
+                await configManager.updateSubscription()
+            }
+        }
+        .disabled(configManager.isUpdating)
+    }
+    
+    private func initializeData() {
+        Task {
+            await configManager.loadConfigs()
+            await nodeManager.loadNodes()
         }
     }
 }
@@ -87,56 +108,23 @@ struct SidebarView: View {
     @EnvironmentObject var proxyManager: ProxyManager
     
     var body: some View {
-        List(SidebarItem.allCases, id: \.self, selection: $selectedTab) { item in
-            NavigationLink(value: item) {
-                Label {
-                    Text(item.title)
-                } icon: {
+        List(SidebarItem.allCases, id: \.self) { item in
+            Button(action: {
+                selectedTab = item
+            }) {
+                HStack {
                     Image(systemName: item.icon)
-                        .foregroundColor(item == selectedTab ? .accentColor : .secondary)
+                        .foregroundColor(item == selectedTab ? Color.accentColor : Color.secondary)
+                    Text(item.title)
+                        .foregroundColor(item == selectedTab ? Color.accentColor : Color.primary)
                 }
             }
+            .buttonStyle(PlainButtonStyle())
         }
         .listStyle(SidebarListStyle())
         .navigationTitle("ClashX")
-        .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            ToolbarItem(placement: .navigation) {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Circle()
-                            .fill(proxyManager.isRunning ? .green : .red)
-                            .frame(width: 8, height: 8)
-                        Text(proxyManager.isRunning ? "运行中" : "已停止")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    if proxyManager.isRunning {
-                        HStack(spacing: 8) {
-                            HStack(spacing: 2) {
-                                Image(systemName: "arrow.up")
-                                    .font(.caption2)
-                                    .foregroundColor(.blue)
-                                Text(proxyManager.uploadSpeed)
-                                    .font(.caption)
-                                    .fontFamily(.monospaced)
-                            }
-                            
-                            HStack(spacing: 2) {
-                                Image(systemName: "arrow.down")
-                                    .font(.caption2)
-                                    .foregroundColor(.green)
-                                Text(proxyManager.downloadSpeed)
-                                    .font(.caption)
-                                    .fontFamily(.monospaced)
-                            }
-                        }
-                        .foregroundColor(.secondary)
-                    }
-                }
-            }
-        }
+        // .navigationBarTitleDisplayMode(.large) - macOS 不可用
+        // 暂时移除 toolbar 以避免兼容性问题
     }
 }
 
@@ -175,7 +163,7 @@ struct ProxyStatusCard: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "network")
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(Color.accentColor)
                 Text("代理状态")
                     .font(.headline)
                 Spacer()
@@ -185,7 +173,7 @@ struct ProxyStatusCard: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Circle()
-                            .fill(proxyManager.isRunning ? .green : .red)
+                            .fill(proxyManager.isRunning ? Color.green : Color.red)
                             .frame(width: 12, height: 12)
                         Text(proxyManager.isRunning ? "运行中" : "已停止")
                             .font(.title3)
@@ -210,7 +198,7 @@ struct ProxyStatusCard: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                    .background(proxyManager.isRunning ? .red : .green)
+                    .background(proxyManager.isRunning ? Color.red : Color.green)
                     .cornerRadius(8)
                 }
                 .buttonStyle(.plain)
@@ -228,8 +216,7 @@ struct ProxyStatusCard: View {
                             Image(systemName: "arrow.up")
                                 .foregroundColor(.blue)
                             Text(proxyManager.uploadSpeed)
-                                .font(.title3)
-                                .fontFamily(.monospaced)
+                                .font(.system(.title3, design: .monospaced))
                         }
                     }
                     
@@ -241,8 +228,7 @@ struct ProxyStatusCard: View {
                             .foregroundColor(.secondary)
                         HStack {
                             Text(proxyManager.downloadSpeed)
-                                .font(.title3)
-                                .fontFamily(.monospaced)
+                                .font(.system(.title3, design: .monospaced))
                             Image(systemName: "arrow.down")
                                 .foregroundColor(.green)
                         }
@@ -266,7 +252,7 @@ struct QuickActionsCard: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "bolt.fill")
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(Color.accentColor)
                 Text("快速操作")
                     .font(.headline)
                 Spacer()
@@ -283,14 +269,14 @@ struct QuickActionsCard: View {
                         VStack(spacing: 8) {
                             Image(systemName: mode.icon)
                                 .font(.title2)
-                                .foregroundColor(proxyManager.currentMode == mode ? .white : .accentColor)
+                                .foregroundColor(proxyManager.currentMode == mode ? .white : Color.accentColor)
                             Text(mode.rawValue)
                                 .font(.caption)
                                 .foregroundColor(proxyManager.currentMode == mode ? .white : .primary)
                         }
                         .frame(height: 60)
                         .frame(maxWidth: .infinity)
-                        .background(proxyManager.currentMode == mode ? .accentColor : Color(NSColor.controlBackgroundColor))
+                        .background(proxyManager.currentMode == mode ? Color.accentColor : Color(NSColor.controlBackgroundColor))
                         .cornerRadius(8)
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
@@ -316,7 +302,7 @@ struct NodeStatusCard: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "globe")
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(Color.accentColor)
                 Text("节点状态")
                     .font(.headline)
                 Spacer()
@@ -390,7 +376,7 @@ struct ConfigInfoCard: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "doc.text")
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(Color.accentColor)
                 Text("配置信息")
                     .font(.headline)
                 Spacer()
@@ -495,7 +481,7 @@ struct ProxiesView: View {
             
             // 节点列表
             List(filteredNodes, id: \.name) { node in
-                NodeRowView(node: node)
+                DetailedNodeRowView(node: node)
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
             }
             .listStyle(PlainListStyle())
@@ -503,8 +489,8 @@ struct ProxiesView: View {
     }
 }
 
-// 节点行视图
-struct NodeRowView: View {
+// 节点行视图（详细版本）
+struct DetailedNodeRowView: View {
     let node: ProxyNode
     @EnvironmentObject var nodeManager: NodeManager
     
@@ -517,11 +503,11 @@ struct NodeRowView: View {
                 }
             }) {
                 Circle()
-                    .fill(nodeManager.selectedNode?.name == node.name ? .accentColor : .clear)
+                    .fill(nodeManager.selectedNode?.name == node.name ? Color.accentColor : Color.clear)
                     .frame(width: 16, height: 16)
                     .overlay(
                         Circle()
-                            .stroke(.secondary, lineWidth: 1)
+                            .stroke(Color.secondary, lineWidth: 1)
                     )
                     .overlay(
                         Image(systemName: "checkmark")
@@ -613,7 +599,7 @@ struct ConfigsView: View {
                 Button("添加配置") {
                     showingAddConfig = true
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(DefaultButtonStyle())
             }
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
@@ -680,7 +666,7 @@ struct ConfigRowView: View {
 
 // 添加配置视图
 struct AddConfigView: View {
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var configManager: ConfigManager
     @State private var configName = ""
     @State private var subscriptionURL = ""
@@ -689,7 +675,11 @@ struct AddConfigView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section("配置信息") {
+                Group {
+                    Text("配置信息")
+                        .font(.headline)
+                        .padding(.top)
+                    
                     TextField("配置名称", text: $configName)
                     
                     Picker("配置类型", selection: $configType) {
@@ -701,37 +691,39 @@ struct AddConfigView: View {
                 }
                 
                 if configType == .subscription {
-                    Section("订阅链接") {
+                    Group {
+                        Text("订阅链接")
+                            .font(.headline)
+                            .padding(.top)
+                        
                         TextField("https://example.com/config.yaml", text: $subscriptionURL)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                     }
                 }
             }
             .navigationTitle("添加配置")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") {
-                        dismiss()
+            // .navigationBarTitleDisplayMode(.inline) - macOS 不可用
+            // 暂时移除 toolbar 以避免兼容性问题
+            HStack {
+                Button("取消") {
+                    presentationMode.wrappedValue.dismiss()
+                }
+                Spacer()
+                Button("添加") {
+                    Task {
+                        await addConfig()
                     }
                 }
-                
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("添加") {
-                        Task {
-                            await addConfig()
-                        }
-                    }
-                    .disabled(configName.isEmpty || (configType == .subscription && subscriptionURL.isEmpty))
-                }
+                .disabled(configName.isEmpty || (configType == .subscription && subscriptionURL.isEmpty))
             }
+            .padding()
         }
         .frame(width: 500, height: 300)
     }
     
     func addConfig() async {
         await configManager.addConfig(name: configName, subscriptionURL: configType == .subscription ? subscriptionURL : nil)
-        dismiss()
+        presentationMode.wrappedValue.dismiss()
     }
 }
 
@@ -815,37 +807,57 @@ struct SettingsView: View {
     
     var body: some View {
         Form {
-            Section("代理设置") {
-                LabeledContent("HTTP 端口") {
-                    TextField("7890", value: .constant(7890), format: .number)
+            Group {
+                Text("代理设置")
+                    .font(.headline)
+                    .padding(.top)
+                
+                HStack {
+                    Text("HTTP 端口")
+                    Spacer()
+                    TextField("7890", text: .constant("7890"))
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(width: 100)
                 }
                 
-                LabeledContent("SOCKS 端口") {
-                    TextField("7891", value: .constant(7891), format: .number)
+                HStack {
+                    Text("SOCKS 端口")
+                    Spacer()
+                    TextField("7891", text: .constant("7891"))
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(width: 100)
                 }
                 
-                LabeledContent("API 端口") {
-                    TextField("9090", value: .constant(9090), format: .number)
+                HStack {
+                    Text("API 端口")
+                    Spacer()
+                    TextField("9090", text: .constant("9090"))
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(width: 100)
                 }
             }
             
-            Section("应用设置") {
+            Group {
+                Text("应用设置")
+                    .font(.headline)
+                    .padding(.top)
+                
                 Toggle("开机自启动", isOn: $launchAtLogin)
                 
                 Toggle("显示通知", isOn: $showNotifications)
             }
             
-            Section("配置更新") {
+            Group {
+                Text("配置更新")
+                    .font(.headline)
+                    .padding(.top)
+                
                 Toggle("自动更新配置", isOn: $autoUpdateConfigs)
                 
                 if autoUpdateConfigs {
-                    LabeledContent("更新间隔") {
+                    HStack {
+                        Text("更新间隔")
+                        Spacer()
                         HStack {
                             Slider(value: $updateInterval, in: 1...24, step: 1) {
                                 Text("小时")
@@ -859,12 +871,20 @@ struct SettingsView: View {
                 }
             }
             
-            Section("关于") {
-                LabeledContent("版本") {
+            Group {
+                Text("关于")
+                    .font(.headline)
+                    .padding(.top)
+                
+                HStack {
+                    Text("版本")
+                    Spacer()
                     Text("1.0.0")
                 }
                 
-                LabeledContent("Build") {
+                HStack {
+                    Text("Build")
+                    Spacer()
                     Text("1")
                 }
                 
@@ -873,7 +893,7 @@ struct SettingsView: View {
                 }
             }
         }
-        .formStyle(.grouped)
+        // .formStyle(.grouped) - 仅在 macOS 13+ 可用
         .frame(maxWidth: 600)
     }
 }
